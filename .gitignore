@@ -41,3 +41,11 @@ Icon
 Network Trash Folder
 Temporary Items
 .apdisk
+
+STM32F4_Control/Debug/bin/STM32F4_Control (2).map
+*.xml
+STM32F4_Control/Debug/bin/STM32F4_Control.elf
+*.hex
+*.map
+*.o
+*.bin
