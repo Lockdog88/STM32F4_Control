@@ -8,6 +8,9 @@ microrl_t rl;
 microrl_t * prl = &rl;
 char* fp;
 
+volatile uint16_t f_rxrdy;
+volatile char rx_data;
+
 void USARTs_Init(void)
 {
 	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA,ENABLE);
@@ -75,6 +78,7 @@ int main(void)
 	CLI_Init();
 	USARTs_Init();
 	PWM_Init();
+	USART_1_NVIC();
 	set_throttle(25);
 	set_rudder(50);
 	set_aileron(50);
@@ -88,12 +92,48 @@ int main(void)
     				data = USART_ReceiveData(USART2);
     				//readLidar();
     			}
-    	microrl_insert_char (prl, get_char());
+    	if (f_rxrdy)
+    	{
+    		microrl_insert_char (prl, rx_data);
+    		f_rxrdy = 0;
+    	}
 
   /*  if (USART_GetFlagStatus(USART1, USART_FLAG_RXNE)!=0)
     	    			{
     						data = USART_ReceiveData(USART1);
     					USART_SendData(USART1, data);
     	    			}*/
+    }
+}
+
+
+void USART_1_NVIC(void)
+{
+  NVIC_InitTypeDef NVIC_InitStructure;
+
+  /* Configure the NVIC Preemption Priority Bits */
+  NVIC_PriorityGroupConfig(NVIC_PriorityGroup_0);
+
+  /* Enable the USART2 Interrupt */
+  NVIC_InitStructure.NVIC_IRQChannel = USART1_IRQn;
+  NVIC_InitStructure.NVIC_IRQChannelSubPriority = 1;
+  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
+  NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+
+  NVIC_Init(&NVIC_InitStructure);
+
+  // включение прерывани€ по приему и по передачи
+  USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);
+  //USART_ITConfig(USART1, USART_IT_TXE, ENABLE); при передаче разрешить
+}
+
+void USART1_IRQHandler(void)
+{
+    /* ѕрерывание по приему байта по USART */
+    if(USART_GetITStatus(USART1, USART_IT_RXNE) != RESET)
+    {
+        USART_ClearFlag(USART1, USART_IT_RXNE);
+        rx_data = USART1->DR;
+        f_rxrdy = 1;
     }
 }
